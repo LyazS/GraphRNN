@@ -195,16 +195,34 @@ def encode_adj(adj, max_prev_node=10, is_full = False):
     # pick up lower tri
     adj = np.tril(adj, k=-1)
     n = adj.shape[0]
+    """
+    删掉第一个点的邻接，因为总会从第一个点开始生成一张图，
+    所以没必要再去预测第一个点的信息，只需要从第二个点开始往后预测就好了
+
+    删掉最后一列，为什么？
+    前面的点都与最后一个点无关，最后点与自己也没有连接，所以删掉问题不大
+    """
     adj = adj[1:n, 0:n-1]
 
     # use max_prev_node to truncate
     # note: now adj is a (n-1)*(n-1) matrix
     adj_output = np.zeros((adj.shape[0], max_prev_node))
     for i in range(adj.shape[0]):
-        input_start = max(0, i - max_prev_node + 1)
+        """
+        对角线i位置代表与上一个点的连接关系
+        从后往前计数max_prev_node位置，超过了就截断为0
+        """
         input_end = i + 1
-        output_start = max_prev_node + input_start - input_end
+        input_start = max(0, input_end - max_prev_node)
+        """
+        输出位置为最大位置往前计数输入的距离
+        """
+        output_start = max_prev_node - (input_end - input_start)
         output_end = max_prev_node
+        """
+        顶格到后边进行输出
+        TODO 掉转顺序是我没想到的，为什么
+        """
         adj_output[i, output_start:output_end] = adj[i, input_start:input_end]
         adj_output[i,:] = adj_output[i,:][::-1] # reverse order
 
@@ -417,7 +435,8 @@ class Graph_sequence_sampler_pytorch(torch.utils.data.Dataset):
         # generate input x, y pairs
         len_batch = adj_copy.shape[0]
         x_idx = np.random.permutation(adj_copy.shape[0])
-        adj_copy = adj_copy[np.ix_(x_idx, x_idx)]
+        x_idx_=np.ix_(x_idx, x_idx)
+        adj_copy = adj_copy[x_idx_]
         adj_copy_matrix = np.asmatrix(adj_copy)
         G = nx.from_numpy_matrix(adj_copy_matrix)
         # then do bfs in the permuted G

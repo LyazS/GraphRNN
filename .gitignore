@@ -1,0 +1,7 @@
+.vscode
+__pycache__
+tensorboard
+logs
+model_save
+graphs
+eval_results
