@@ -447,7 +447,9 @@ def train_rnn_epoch(epoch, args, rnn, output, data_loader,
         # initialize lstm hidden state according to batch size
         rnn.hidden = rnn.init_hidden(batch_size=x_unsorted.size(0))
         # output.hidden = output.init_hidden(batch_size=x_unsorted.size(0)*x_unsorted.size(1))
-
+        """
+        pack_padded_sequence 要求序列长度从长到短
+        """
         # sort input
         y_len,sort_index = torch.sort(y_len_unsorted,0,descending=True)
         y_len = y_len.numpy().tolist()
@@ -463,11 +465,13 @@ def train_rnn_epoch(epoch, args, rnn, output, data_loader,
         y_reshape = y_reshape.index_select(0, idx)
         y_reshape = y_reshape.view(y_reshape.size(0),y_reshape.size(1),1)
 
-        output_x = torch.cat((torch.ones(y_reshape.size(0),1,1),y_reshape[:,0:-1,0:1]),dim=1)
+        output_x = torch.cat((torch.ones(y_reshape.size(0),1,1),y_reshape),dim=1)
+        # output_x = torch.cat((torch.ones(y_reshape.size(0),1,1),y_reshape[:,0:-1,0:1]),dim=1)
         output_y = y_reshape
         # batch size for output module: sum(y_len)
         output_y_len = []
         output_y_len_bin = np.bincount(np.array(y_len))
+        print(output_y_len_bin)
         for i in range(len(output_y_len_bin)-1,0,-1):
             count_temp = np.sum(output_y_len_bin[i:]) # count how many y_len is above i
             output_y_len.extend([min(i,y.size(2))]*count_temp) # put them in output_y_len; max value should not exceed y.size(2)

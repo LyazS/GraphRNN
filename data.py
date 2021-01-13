@@ -221,7 +221,7 @@ def encode_adj(adj, max_prev_node=10, is_full = False):
         output_end = max_prev_node
         """
         顶格到后边进行输出
-        TODO 掉转顺序是我没想到的，为什么
+        翻转顺序是为了先从与上一个点关系开始往更早之前的点关系预测
         """
         adj_output[i, output_start:output_end] = adj[i, input_start:input_end]
         adj_output[i,:] = adj_output[i,:][::-1] # reverse order
@@ -448,6 +448,9 @@ class Graph_sequence_sampler_pytorch(torch.utils.data.Dataset):
         # for small graph the rest are zero padded
         y_batch[0:adj_encoded.shape[0], :] = adj_encoded
         x_batch[1:adj_encoded.shape[0] + 1, :] = adj_encoded
+        """
+        len_batch：用于后续pack的时候排序
+        """
         return {'x':x_batch,'y':y_batch, 'len':len_batch}
 
     def calc_max_prev_node(self, iter=20000,topk=10):
